@@ -1,3 +1,4 @@
+
 import datetime
 
 import pandas as pd
@@ -82,15 +83,11 @@ class SolarPowerPredictor:
 
         # Check if the start date is more than 3 months ago
         three_months_ago = datetime.datetime.today() - datetime.timedelta(days=3 * 30)
-        weather_service = WeatherService()
 
         if start_date_datetime < three_months_ago:
-            weather_data = weather_service.get_historical_weather(
-                latitude, longitude, start_date, end_date
-            )
             print(
-                f"Start date ({start_date}) is more than 3 months ago, using Open Meteo",
-                "historical API for weather data.",
+                f"Start date ({start_date}) is more than 3 months ago, no",
+                "forecast data available.",
             )
         else:
             weather_data = weather_service.get_minutely_weather(
