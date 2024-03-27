@@ -9,74 +9,46 @@ class WeatherDataHandler:
     def __init__(self):
         pass
 
-    def get_hourly_weather_data_with_forecast(
+    def _build_url(
         self,
         latitude: float,
         longitude: float,
         start_date: str,
         end_date: str,
-    ) -> pd.DataFrame:
+        variables: list
+    ) -> str:
+        """Builds the URL for the Open Meteo API.
+
+        Args:
+            latitude (float): The latitude of the location.
+            longitude (float): The longitude of the location.
+            start_date (str): The start date of the forecast.
+            end_date (str): The end date of the forecast.
+            variables (list): The list of variables to include in the forecast.
+
+        Returns:
+            str: The URL for the Open Meteo API.
         """
-        Get hourly weather data with forecast.
-
-        Parameters
-        ----------
-        latitude : float
-            Latitude of the location.
-        longitude : float
-            Longitude of the location.
-        start_date : str
-            Start date in format YYYY-MM-DD.
-        end_date : str
-            End date in format YYYY-MM-DD.
-
-        Returns
-        -------
-        pd.DataFrame
-            Hourly weather data with forecast.
-        """
-
-        variables = [
-            "temperature_2m",
-            "relative_humidity_2m",
-            "dew_point_2m",
-            "precipitation",
-            "surface_pressure",
-            "cloud_cover",
-            "cloud_cover_low",
-            "cloud_cover_mid",
-            "cloud_cover_high",
-            "visibility",
-            "wind_speed_10m",
-            "wind_speed_80m",
-            "wind_speed_120m",
-            "wind_speed_180m",
-            "wind_direction_10m",
-            "wind_direction_80m",
-            "wind_direction_120m",
-            "wind_direction_180m",
-            "is_day",
-            "sunshine_duration",
-            "shortwave_radiation",
-            "direct_radiation",
-            "diffuse_radiation",
-            "direct_normal_irradiance",
-            "terrestrial_radiation",
-        ]
-
         url = (
             f"https://api.open-meteo.com/v1/forecast?"
             f"latitude={latitude}&longitude={longitude}"
-            f"$hourly={','.join(variables)}"
+            f"$minutely_15={','.join(variables)}"
             f"&start_date={start_date}&end_date={end_date}&timezone=GMT"
         )
-        r = requests.get(url)
-        d = json.loads(r.text)
-        response = pd.DataFrame(d["hourly"])
-        response["date"] = pd.to_datetime(response["time"])
-        return response
+        return url
+    
+    def _call_url(self, url: str) -> dict:
+        """Calls the Open Meteo API and returns the response.
 
-        return response
+        Args:
+            url (str): The URL for the Open Meteo API.
+
+        Returns:
+            dict: The response from the Open Meteo API.
+        """
+        response = requests.get(url)
+        return json.loads(response.text)
+
 
     def get_15_minutely_weather_data_with_forecast(
         self,
@@ -124,14 +96,9 @@ class WeatherDataHandler:
             "direct_normal_irradiance",
             "terrestrial_radiation",
         ]
-        url = (
-            f"https://api.open-meteo.com/v1/forecast?"
-            f"latitude={latitude}&longitude={longitude}"
-            f"$minutely_15={','.join(variables)}"
-            f"&start_date={start_date}&end_date={end_date}&timezone=GMT"
-        )
-        r = requests.get(url)
-        d = json.loads(r.text)
+        url = self._build_url(latitude, longitude, start_date, end_date,
+                              variables)
+        d = self._call_url(url)
         response = pd.DataFrame(d["minutely_15"])
         response["date"] = pd.to_datetime(response["time"])
         return response
@@ -198,45 +165,6 @@ class WeatherService:
             raise ValueError(
                 f"Invalid date format. Please use YYYY-MM-DD. Got {start_date} and {end_date}."
             )
-
-    def get_hourly_weather(
-        self,
-        latitude: float,
-        longitude: float,
-        start_date: str,
-        end_date: str,
-    ) -> pd.DataFrame:
-        """
-        Get hourly weather data ranging from 3 months ago up to 15 days ahead (forecast).
-
-        Parameters
-        ----------
-        latitude : float
-            The latitude of the location for which to get weather data.
-        longitude : float
-            The longitude of the location for which to get weather data.
-        start_date : str
-            The start date for the weather data, in the format YYYY-MM-DD.
-        end_date : str
-            The end date for the weather data, in the format YYYY-MM-DD.
-
-        Returns
-        -------
-        pd.DataFrame
-            A DataFrame containing the hourly weather data for the specified location and date
-            range. The data includes both historical and forecast data.
-
-        Raises
-        ------
-        ValueError
-            If the provided coordinates are not within valid ranges, or if the date format is
-            invalid, or if the end_date is not greater than the start_date.
-        """
-        self._validate_coordinates(latitude, longitude)
-        self._validate_date_format(start_date, end_date)
-        return self.data_handler.get_hourly_weather_data_with_forecast(
-            latitude, longitude, start_date, end_date
-        )
 
     def get_minutely_weather(
         self,
