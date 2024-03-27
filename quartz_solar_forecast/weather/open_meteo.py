@@ -32,7 +32,7 @@ class WeatherDataHandler:
         url = (
             f"https://api.open-meteo.com/v1/forecast?"
             f"latitude={latitude}&longitude={longitude}"
-            f"$minutely_15={','.join(variables)}"
+            f"&minutely_15={','.join(variables)}"
             f"&start_date={start_date}&end_date={end_date}&timezone=GMT"
         )
         return url
